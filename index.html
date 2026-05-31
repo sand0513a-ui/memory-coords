@@ -92,6 +92,10 @@
     position:relative;
     touch-action:none; /* JS 핀치 줌 처리 */
     cursor:grab;
+    min-height: 400px; /* 로딩 전 공간 확보 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   #map-zoom-wrap:active { cursor:grabbing; }
   #korea-map {
@@ -101,7 +105,6 @@
     display:block;
     transform-origin:0 0;
     will-change:transform;
-    /* 핀은 SVG viewBox 좌표계에 있으므로 지도 스케일과 함께 자동으로 비례 변환됨 */
   }
   /* 줌 컨트롤 버튼 */
   #zoom-controls {
@@ -133,22 +136,17 @@
   .region:hover { fill:var(--mgh); }
   .pin-group {
     cursor:pointer;
-    /* 히트박스가 사각형으로 잡히지 않도록 설정 */
     pointer-events: none;
   }
   .pin-group * {
-    /* 내부 요소들만 개별적으로 이벤트를 받게 함 (원형 유지) */
     pointer-events: all;
-    /* 역스케일링을 위해 transform-origin 설정 */
     transform-origin: center;
     transform-box: fill-box;
   }
   .pin-circle {
     fill:#fff; stroke:var(--mga); stroke-width:0.6;
     transition:fill .2s, opacity .25s;
-    /* 개별 transform은 JS에서 제어하므로 CSS transition에서는 transform 제외 */
   }
-  /* hover + active(모바일 터치) 시 색상 변경만 CSS로 처리 */
   .pin-group:hover .pin-circle,
   .pin-group:active .pin-circle { fill:var(--mga); }
   .pin-dot { fill:var(--mga); transition:fill .2s,opacity .25s; }
@@ -158,9 +156,7 @@
   .pin-group.hidden .pin-dot { opacity:0; pointer-events:none; }
   .pin-group.hidden { pointer-events:none; }
 
-  /* ══════════════════════════════
-     모바일 카드: 하단 시트
-  ══════════════════════════════ */
+  /* ── 카드 스타일 (기존과 동일) ── */
   #card-overlay {
     position:fixed; inset:0; z-index:100;
     display:flex; align-items:flex-end;
@@ -190,13 +186,11 @@
     transform:translateY(0);
     opacity:1;
   }
-  /* 드래그 핸들 */
   .card-handle {
     width:36px; height:4px;
     background:#ddd; border-radius:2px;
     margin:0 auto 14px;
   }
-
   .card-header { margin-bottom:14px; }
   .card-title {
     font-family:'Noto Serif KR',serif;
@@ -227,7 +221,6 @@
   }
   .copy-btn:hover { background:var(--mg); color:#fff; border-color:var(--mg); }
   .copy-btn.copied { background:var(--mga); color:#fff; border-color:var(--mga); }
-
   .card-images {
     display:flex; gap:8px;
     overflow-x:auto; scrollbar-width:none;
@@ -241,7 +234,6 @@
     display:flex; align-items:center;
     justify-content:center; font-size:1.5rem;
   }
-
   .card-close {
     position:absolute; top:14px; right:16px;
     width:32px; height:32px; border-radius:50%;
@@ -258,12 +250,8 @@
     font-style:italic;
   }
 
-  /* ══════════════════════════════
-     PC 레이아웃 (768px+)
-  ══════════════════════════════ */
   @media (min-width: 768px) {
     :root { --map-max:460px; }
-
     .layout {
       flex-direction:row;
       align-items:flex-start;
@@ -273,28 +261,20 @@
       max-width:1100px;
       margin:0 auto;
     }
-
-    /* 왼쪽 패널: 헤더 + 탭 + 카드 */
     .left-panel {
       display:flex; flex-direction:column;
       align-items:flex-start;
       width:320px; flex-shrink:0;
       position:sticky; top:48px;
     }
-
     header { text-align:left; margin-bottom:18px; }
     .year-tabs { justify-content:flex-start; margin-bottom:28px; }
-
-    /* 지도 오른쪽 */
     #map-wrap {
       flex:1;
       min-width:280px;
       max-width:var(--map-max);
     }
-    /* PC에서 줌 컨트롤 숨김 (마우스 휠로 충분) */
     #zoom-controls { display:none; }
-
-    /* PC에서 카드: 왼쪽 패널 아래에 인라인으로 */
     #card-overlay {
       position:static !important;
       background:none !important;
@@ -302,8 +282,6 @@
       display:block !important;
       width:100%;
     }
-    #card-overlay.visible { background:none !important; }
-
     .card {
       border-radius:16px;
       max-height:none;
@@ -311,19 +289,12 @@
       opacity:1 !important;
       box-shadow:0 4px 24px rgba(0,0,0,0.10);
       padding:20px;
-      display:none;   /* JS로 토글 */
+      display:none;
       transition:none;
     }
     .card.pc-visible { display:block; }
     .card-handle { display:none; }
     .card-close { top:12px; right:12px; }
-  }
-
-  /* 넓은 PC */
-  @media (min-width: 1100px) {
-    :root { --map-max:540px; }
-    .layout { gap:60px; }
-    .left-panel { width:360px; }
   }
 </style>
 </head>
@@ -331,7 +302,6 @@
 <div id="bg-layer"></div>
 
 <div class="layout">
-  <!-- ── 왼쪽 패널 (PC) / 상단 (모바일) ── -->
   <div class="left-panel">
     <header>
       <h1>여행 기록</h1>
@@ -345,7 +315,6 @@
       <button class="year-tab" data-year="2028">2028</button>
     </div>
 
-    <!-- PC 전용 인라인 카드 (모바일에서는 숨김, overlay로 대체) -->
     <div id="card-overlay" onclick="closeCardOutside(event)">
       <div class="card" id="info-card">
         <div class="card-handle"></div>
@@ -364,74 +333,107 @@
     </div>
   </div>
 
-  <!-- ── 지도 ── -->
   <div id="map-wrap">
-    <!-- 줌 컨트롤 버튼 (모바일 전용) -->
     <div id="zoom-controls">
-      <button class="zoom-btn" id="btn-zoom-out" aria-label="축소">−</button>
-      <button class="zoom-btn" id="btn-zoom-reset" aria-label="초기화" style="font-size:0.8rem;">↺</button>
-      <button class="zoom-btn" id="btn-zoom-in" aria-label="확대">+</button>
+      <button class="zoom-btn" id="btn-zoom-out">−</button>
+      <button class="zoom-btn" id="btn-zoom-reset">↺</button>
+      <button class="zoom-btn" id="btn-zoom-in">+</button>
     </div>
     <div id="map-zoom-wrap">
-    <!-- [SVG 데이터 위치] 깃허브의 korea_map.svg 내용을 여기에 붙여넣으세요 -->
-    </div><!-- /#map-zoom-wrap -->
-  </div><!-- /#map-wrap -->
-</div><!-- /.layout -->
+      <!-- SVG 데이터가 여기에 로드됩니다 -->
+      <div id="loading-msg">지도를 불러오는 중...</div>
+    </div>
+  </div>
+</div>
 
 <script>
   const IS_PC = () => window.innerWidth >= 768;
 
+  // 1. 외부 SVG 파일 로드 함수
+  async function loadMap() {
+    try {
+      const response = await fetch('korea_map.svg');
+      const svgText = await response.text();
+      const mapWrap = document.getElementById('map-zoom-wrap');
+      mapWrap.innerHTML = svgText;
+      
+      // 로드 후 초기화 실행
+      initMapLogic();
+    } catch (error) {
+      document.getElementById('loading-msg').textContent = '지도를 불러오지 못했습니다. korea_map.svg 파일이 같은 폴더에 있는지 확인해주세요.';
+    }
+  }
+
   const regionBg = {
-    gangwon:  'radial-gradient(ellipse at 70% 20%, #c8dfc0 0%, #a0c4a0 40%, #f5f5f0 100%)',
-    gyeonggi: 'radial-gradient(ellipse at 30% 30%, #d0d8e8 0%, #b8c8e0 40%, #f5f5f0 100%)',
-    chungbuk: 'radial-gradient(ellipse at 50% 50%, #d8e0c8 0%, #b8c8a8 40%, #f5f5f0 100%)',
-    chungnam: 'radial-gradient(ellipse at 30% 50%, #d8e4c8 0%, #b8cca8 40%, #f5f5f0 100%)',
-    gyeongbuk:'radial-gradient(ellipse at 70% 50%, #e0d8c0 0%, #c8c0a0 40%, #f5f5f0 100%)',
-    gyeongnam:'radial-gradient(ellipse at 70% 70%, #c8e0d8 0%, #a8c8c0 40%, #f5f5f0 100%)',
-    jeonbuk:  'radial-gradient(ellipse at 30% 60%, #d8e8c8 0%, #b8d0a8 40%, #f5f5f0 100%)',
-    jeonnam:  'radial-gradient(ellipse at 30% 70%, #c8e8d8 0%, #a8d0b8 40%, #f5f5f0 100%)',
-    busan:    'radial-gradient(ellipse at 75% 70%, #b8d8e8 0%, #90b8d0 40%, #f5f5f0 100%)',
-    jeju:     'radial-gradient(ellipse at 40% 90%, #b8e0d8 0%, #88c8c0 40%, #f5f5f0 100%)',
+    gangwon: 'linear-gradient(135deg,#eef4ea 0%,#d0e0c8 100%)',
+    gyeonggi: 'linear-gradient(135deg,#fdfcf0 0%,#f0e8c0 100%)',
+    gyeongnam: 'linear-gradient(135deg,#f0f7fd 0%,#c8e0f0 100%)',
+    gyeongbuk: 'linear-gradient(135deg,#fdf2f2 0%,#f0c8c8 100%)',
+    jeonnam: 'linear-gradient(135deg,#f2fdf7 0%,#c8f0e0 100%)',
+    jeonbuk: 'linear-gradient(135deg,#fcf2fd 0%,#e0c8f0 100%)',
+    chungnam: 'linear-gradient(135deg,#fdf8f2 0%,#f0e0c8 100%)',
+    chungbuk: 'linear-gradient(135deg,#f2f7fd 0%,#c8d8f0 100%)',
+    jeju: 'linear-gradient(135deg,#fff8f0 0%,#ffe0c0 100%)'
   };
 
   const pinData = {
-    chuncheon:{ title:'춘천 명동닭갈비', address:'강원특별자치도 춘천시 명동길 11', region:'gangwon', year:2026, images:['🍗','☕','🏞️'] },
-    seoul:    { title:'광장시장', address:'서울특별시 종로구 창경궁로 88', region:'gyeonggi', year:2026, images:['🥘','🫕','🌆'] },
-    busan:    { title:'돼지국밥 거리', address:'부산광역시 동래구 명륜로 97', region:'busan', year:2027, images:['🍲','🌊','🐟'] },
+    seoul:    { title:'남산타워 나들이', address:'서울특별시 용산구 남산공원길 105', region:'gyeonggi', year:2026, images:['🗼','🌳','🥨'] },
+    sokcho:   { title:'속초 바다 여행', address:'강원특별자치도 속초시 해오름로 190', region:'gangwon', year:2026, images:['🌊','🦀','🍦'] },
+    busan:    { title:'해운대 산책', address:'부산광역시 해운대구 달맞이길 62번길', region:'gyeongnam', year:2027, images:['🏖️','🏙️','🍲'] },
     yeosu:    { title:'여수 밤바다', address:'전라남도 여수시 돌산읍 돌산로', region:'jeonnam', year:2027, images:['🌊','🦞','🌃'] },
     jeju:     { title:'성산일출봉', address:'제주특별자치도 서귀포시 성산읍 일출로 284-12', region:'jeju', year:2028, images:['🌋','🍊','🌅'] },
   };
 
   let currentAddress = '';
 
-  /* ── 연도 탭 ── */
-  document.querySelectorAll('.year-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      const year = tab.dataset.year;
-      document.querySelectorAll('.pin-group').forEach(pin => {
-        pin.classList.toggle('hidden', year !== 'all' && pin.dataset.year !== year);
+  function initMapLogic() {
+    // 탭 클릭 이벤트
+    document.querySelectorAll('.year-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const year = tab.dataset.year;
+        document.querySelectorAll('.pin-group').forEach(pin => {
+          pin.classList.toggle('hidden', year !== 'all' && pin.dataset.year !== year);
+        });
+        closeCard();
       });
-      closeCard();
     });
-  });
 
-  /* ── 카드 열기 ── */
+    // 지역 hover 배경
+    document.querySelectorAll('.region').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        const r = el.dataset.region; if (!regionBg[r]) return;
+        const bg = document.getElementById('bg-layer');
+        bg.style.setProperty('--region-gradient', regionBg[r]);
+        bg.classList.add('active');
+      });
+      el.addEventListener('mouseleave', () => {
+        const overlay = document.getElementById('card-overlay');
+        const card    = document.getElementById('info-card');
+        const cardOpen = overlay.classList.contains('visible') || card.classList.contains('pc-visible');
+        if (!cardOpen) document.getElementById('bg-layer').classList.remove('active');
+      });
+    });
+
+    // 핀 클릭 이벤트 (SVG가 동적으로 로드되므로 직접 바인딩)
+    document.querySelectorAll('.pin-group').forEach(pin => {
+      pin.onclick = () => openCard(pin.id);
+    });
+
+    // 줌/드래그 로직 초기화
+    initZoomAndDrag();
+  }
+
   function openCard(pinId) {
     const data = pinData[pinId]; if (!data) return;
-
-    // 배경 그라디언트
     const bg = document.getElementById('bg-layer');
     bg.style.setProperty('--region-gradient', regionBg[data.region] || '');
     bg.classList.add('active');
-
-    // 카드 내용
     document.getElementById('card-title').textContent = data.title;
     document.getElementById('card-address').textContent = data.address;
     document.getElementById('card-year-badge').textContent = data.year + '년';
     currentAddress = data.address;
-
     const ic = document.getElementById('card-images'); ic.innerHTML = '';
     const empty = document.getElementById('card-empty');
     if (data.images?.length) {
@@ -440,23 +442,14 @@
         const d = document.createElement('div'); d.className = 'img-placeholder'; d.textContent = img; ic.appendChild(d);
       });
     } else { empty.style.display = 'block'; }
-
     document.getElementById('copy-btn').textContent = '복사';
     document.getElementById('copy-btn').classList.remove('copied');
-
     const overlay = document.getElementById('card-overlay');
     const card    = document.getElementById('info-card');
-
-    if (IS_PC()) {
-      // PC: 인라인 표시
-      card.classList.add('pc-visible');
-    } else {
-      // 모바일: 하단 시트
-      overlay.classList.add('visible');
-    }
+    if (IS_PC()) card.classList.add('pc-visible');
+    else overlay.classList.add('visible');
   }
 
-  /* ── 카드 닫기 ── */
   function closeCard() {
     document.getElementById('card-overlay').classList.remove('visible');
     document.getElementById('info-card').classList.remove('pc-visible');
@@ -467,7 +460,6 @@
     if (!IS_PC() && e.target === document.getElementById('card-overlay')) closeCard();
   }
 
-  /* ── 주소 복사 ── */
   function copyAddress() {
     navigator.clipboard.writeText(currentAddress).then(() => {
       const btn = document.getElementById('copy-btn');
@@ -476,105 +468,30 @@
     });
   }
 
-  /* ── 지역 hover 배경 ── */
-  document.querySelectorAll('.region').forEach(el => {
-    el.addEventListener('mouseenter', () => {
-      const r = el.dataset.region; if (!regionBg[r]) return;
-      const bg = document.getElementById('bg-layer');
-      if (!bg.classList.contains('active')) {
-        bg.style.setProperty('--region-gradient', regionBg[r]);
-        bg.classList.add('active');
-      }
-    });
-    el.addEventListener('mouseleave', () => {
-      const overlay = document.getElementById('card-overlay');
-      const card    = document.getElementById('info-card');
-      const cardOpen = overlay.classList.contains('visible') || card.classList.contains('pc-visible');
-      if (!cardOpen) document.getElementById('bg-layer').classList.remove('active');
-    });
-  });
-
-  /* ── 리사이즈 시 카드 상태 보정 ── */
-  window.addEventListener('resize', () => {
-    const overlay = document.getElementById('card-overlay');
-    const card    = document.getElementById('info-card');
-    if (IS_PC()) {
-      // PC로 전환: 모바일 overlay 끄고 pc-visible만 유지
-      if (overlay.classList.contains('visible') && card.classList.contains) {
-        overlay.classList.remove('visible');
-        card.classList.add('pc-visible');
-      }
-    } else {
-      // 모바일로 전환: pc-visible 끄고 overlay로 전환
-      if (card.classList.contains('pc-visible')) {
-        card.classList.remove('pc-visible');
-        overlay.classList.add('visible');
-      }
-    }
-  });
-
-  /* ══════════════════════════════
-     핀치 줌 + 드래그 + 버튼 줌
-     핀은 SVG viewBox 좌표계 안에 있으므로
-     지도 transform 스케일과 함께 자동 비례 변환됨
-  ══════════════════════════════ */
-  (function() {
+  function initZoomAndDrag() {
     const wrap = document.getElementById('map-zoom-wrap');
     const svg  = document.getElementById('korea-map');
+    if (!svg) return;
 
     let scale = 1, tx = 0, ty = 0;
     const MIN_SCALE = 1, MAX_SCALE = 4;
 
     function applyTransform() {
       svg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-      
-      // 핀 역스케일링: 지도가 커지는 만큼 핀을 작게 만들어 시각적 크기 유지
       const invScale = 1 / scale;
       document.querySelectorAll('.pin-group').forEach(group => {
         const circle = group.querySelector('.pin-circle');
         const dot    = group.querySelector('.pin-dot');
         const hit    = group.querySelector('circle[fill="transparent"]');
-        
-        // 기본 역스케일링 배율
         let s = invScale;
-        
-        // hover/active 시에는 1.4배 강조 효과 적용
-        // (단, 지도가 커진 상태이므로 강조 효과도 invScale이 곱해진 상태에서 적용되어야 함)
         const isHover = group.matches(':hover') || group.matches(':active');
         if (isHover) s *= 1.4;
-
         if (circle) circle.style.transform = `scale(${s})`;
         if (dot)    dot.style.transform    = `scale(${s})`;
         if (hit)    hit.style.transform    = `scale(${s})`;
       });
     }
 
-    // hover 시에도 역스케일링 상태에서 강조되도록 이벤트 리스너 추가
-    document.querySelectorAll('.pin-group').forEach(group => {
-      ['mouseenter', 'mouseleave', 'touchstart', 'touchend'].forEach(evt => {
-        group.addEventListener(evt, () => {
-          // 브라우저가 hover 상태를 즉시 반영하지 않을 수 있으므로 약간의 지연 후 실행하거나 직접 호출
-          requestAnimationFrame(applyTransform);
-        });
-      });
-    });
-
-    function clampTranslate(s, x, y) {
-      const ww = wrap.clientWidth;
-      const wh = wrap.clientHeight;
-      const sw = svg.clientWidth  * s;
-      const sh = svg.clientHeight * s;
-      const maxX = 0;
-      const minX = Math.min(0, ww - sw);
-      const maxY = 0;
-      const minY = Math.min(0, wh - sh);
-      return {
-        x: Math.max(minX, Math.min(maxX, x)),
-        y: Math.max(minY, Math.min(maxY, y))
-      };
-    }
-
-    /* ── 버튼 줌 ── */
     function zoomTo(newScale, cx, cy) {
       cx = cx ?? wrap.clientWidth  / 2;
       cy = cy ?? wrap.clientHeight / 2;
@@ -582,119 +499,29 @@
       const newTx = cx - ratio * (cx - tx);
       const newTy = cy - ratio * (cy - ty);
       scale = newScale;
-      const clamped = clampTranslate(scale, newTx, newTy);
-      tx = clamped.x; ty = clamped.y;
+      tx = newTx; ty = newTy;
       applyTransform();
     }
 
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-      zoomTo(Math.min(MAX_SCALE, parseFloat((scale * 1.4).toFixed(2))));
-    });
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-      zoomTo(Math.max(MIN_SCALE, parseFloat((scale / 1.4).toFixed(2))));
-    });
-    document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-      scale = 1; tx = 0; ty = 0; applyTransform();
-    });
+    document.getElementById('btn-zoom-in').onclick = () => zoomTo(Math.min(MAX_SCALE, scale * 1.4));
+    document.getElementById('btn-zoom-out').onclick = () => zoomTo(Math.max(MIN_SCALE, scale / 1.4));
+    document.getElementById('btn-zoom-reset').onclick = () => { scale = 1; tx = 0; ty = 0; applyTransform(); };
 
-    // 초기화 시 핀 크기 설정
-    window.addEventListener('load', applyTransform);
-
-    /* ── 핀치 줌 (모바일) ── */
-    let lastDist = null;
-    let lastMidX = 0, lastMidY = 0;
-
-    wrap.addEventListener('touchstart', e => {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        const t0 = e.touches[0], t1 = e.touches[1];
-        lastDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
-        const rect = wrap.getBoundingClientRect();
-        lastMidX = (t0.clientX + t1.clientX) / 2 - rect.left;
-        lastMidY = (t0.clientY + t1.clientY) / 2 - rect.top;
-      }
-    }, { passive: false });
-
-    wrap.addEventListener('touchmove', e => {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        const t0 = e.touches[0], t1 = e.touches[1];
-        const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
-        if (lastDist) {
-          const ratio = dist / lastDist;
-          const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * ratio));
-          const rect = wrap.getBoundingClientRect();
-          const midX = (t0.clientX + t1.clientX) / 2 - rect.left;
-          const midY = (t0.clientY + t1.clientY) / 2 - rect.top;
-          const scaleRatio = newScale / scale;
-          const newTx = midX - scaleRatio * (midX - tx);
-          const newTy = midY - scaleRatio * (midY - ty);
-          scale = newScale;
-          const clamped = clampTranslate(scale, newTx, newTy);
-          tx = clamped.x; ty = clamped.y;
-          applyTransform();
-          lastDist = dist;
-          lastMidX = midX; lastMidY = midY;
-        }
-      }
-    }, { passive: false });
-
-    wrap.addEventListener('touchend', e => {
-      if (e.touches.length < 2) lastDist = null;
-    });
-
-    /* ── 드래그 패닝 (단일 터치 / 마우스) ── */
-    let isDragging = false;
-    let dragStartX = 0, dragStartY = 0;
-    let dragTxStart = 0, dragTyStart = 0;
-    let didDrag = false;
-
-    function pointerDown(clientX, clientY) {
-      isDragging = true; didDrag = false;
-      dragStartX = clientX; dragStartY = clientY;
-      dragTxStart = tx; dragTyStart = ty;
-    }
-    function pointerMove(clientX, clientY) {
-      if (!isDragging || scale <= 1) return;
-      const dx = clientX - dragStartX;
-      const dy = clientY - dragStartY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) didDrag = true;
-      const clamped = clampTranslate(scale, dragTxStart + dx, dragTyStart + dy);
-      tx = clamped.x; ty = clamped.y;
-      applyTransform();
-    }
-    function pointerUp() { isDragging = false; }
-
-    // 마우스
-    wrap.addEventListener('mousedown', e => pointerDown(e.clientX, e.clientY));
-    window.addEventListener('mousemove', e => { if (isDragging) pointerMove(e.clientX, e.clientY); });
-    window.addEventListener('mouseup', pointerUp);
-
-    // 단일 터치 드래그 (핀치 줌 중에는 실행 안 함)
-    wrap.addEventListener('touchstart', e => {
-      if (e.touches.length === 1) {
-        pointerDown(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-    wrap.addEventListener('touchmove', e => {
-      if (e.touches.length === 1 && scale > 1) {
-        e.preventDefault();
-        pointerMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: false });
-    wrap.addEventListener('touchend', () => pointerUp());
-
-    /* ── 마우스 휠 줌 (PC) ── */
-    wrap.addEventListener('wheel', e => {
+    // 마우스 휠 줌
+    wrap.onwheel = (e) => {
       e.preventDefault();
       const rect = wrap.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
       const delta = e.deltaY > 0 ? 0.85 : 1.18;
-      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * delta));
-      zoomTo(newScale, cx, cy);
-    }, { passive: false });
-  })();
+      zoomTo(Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * delta)), cx, cy);
+    };
+
+    applyTransform();
+  }
+
+  // 실행
+  loadMap();
 </script>
 </body>
 </html>
