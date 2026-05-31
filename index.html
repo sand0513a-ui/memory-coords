@@ -422,7 +422,7 @@
       pin.style.cursor = 'pointer';
       pin.onclick = (e) => {
         e.stopPropagation();
-        openCard(pin.id);
+       openCard(pin.dataset.pin);
       };
     });
 
